@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<foo name="FooBar" xmlns="http://example.com/2013/foo">
+  <bb:bar xmlns:bb="http://example.com/2013/bar">
+    <cow>Something &quot;Foo&quot; escaped</cow>
+    <foo bar="foobar"/>
+  </bb:bar>
+</foo>

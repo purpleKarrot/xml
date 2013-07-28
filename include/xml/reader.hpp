@@ -30,7 +30,7 @@ enum class token
 class reader
   {
   public:
-    reader(std::string const& filename);
+    reader(char const* begin, char const* end);
     ~reader();
 
     bool read();

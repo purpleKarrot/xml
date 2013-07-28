@@ -54,7 +54,7 @@ class writer
 
   private:
     struct implementation;
-    implementation* self;
+    std::unique_ptr<implementation> self;
   };
 
 } // namespace xml

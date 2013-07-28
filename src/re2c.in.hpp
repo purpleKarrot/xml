@@ -76,7 +76,7 @@ void reader::implementation::parse_attribute(Attribute& attribute)
   /*!re2c
   ["] [^"]* ["] | ['] [^']* [']
     {
-    attribute.value = std::string(marker.base() + 1, cursor.base() - 1);
+    attribute.value = std::string(marker + 1, cursor - 1);
     return;
     }
   else
@@ -198,7 +198,7 @@ bool reader::implementation::parse_text()
   do
     {
     ++cursor;
-    if (cursor.base() == buffer.end())
+    if (cursor == end)
       {
       return false;
       }
@@ -210,7 +210,7 @@ bool reader::implementation::parse_text()
 
 bool reader::implementation::read()
   {
-  if (cursor.base() == buffer.end())
+  if (cursor == end)
     {
     return false;
     }

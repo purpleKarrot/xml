@@ -8,10 +8,7 @@
 
 #include <xml/reader.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/spirit/home/support/iterators/line_pos_iterator.hpp>
-#include <fstream>
 #include <sstream>
-#include <vector>
 
 namespace xml
 {
@@ -48,18 +45,9 @@ struct Mapping
 struct reader::implementation
   {
   public:
-    implementation(std::string const& filename) :
-        token_(xml::token::none), is_empty_element(false)
+    implementation(char const* begin, char const* end) :
+        cursor(begin), marker(begin), end(end)
       {
-      std::ifstream input(filename);
-      input.unsetf(std::ios::skipws);
-      input.seekg(0, std::ios::end);
-      std::size_t size = static_cast<std::size_t>(input.tellg());
-      input.seekg(0);
-      buffer.resize(size + 1);
-      cursor = marker = Iterator(buffer.begin());
-      input.read(&buffer[0], static_cast<std::streamsize>(size));
-      buffer[size] = 0;
       }
     bool read();
   public:
@@ -78,17 +66,15 @@ struct reader::implementation
     void parse_end_element();
     bool parse_text();
   public:
-    std::vector<char> buffer;
-    typedef std::vector<char>::iterator VectorIterator;
-    typedef boost::spirit::line_pos_iterator<VectorIterator> Iterator;
-    Iterator cursor;
-    Iterator marker;
-    xml::token token_;
+    char const* cursor;
+    char const* marker;
+    char const* end;
+    xml::token token_ = xml::token::none;
     Name current_name;
     std::vector<Attribute> attributes;
     std::vector<Mapping> ns_mappings;
     std::vector<Tag> open_tags;
-    bool is_empty_element;
+    bool is_empty_element = false;
   };
 
 #include "re2c.hpp"
@@ -156,39 +142,15 @@ void reader::implementation::pop_tag()
 
 void reader::implementation::throw_error(std::string const& message) const
   {
-  auto begin = marker.base();
-  for (; begin != buffer.begin(); --begin)
-    {
-    if (*begin == '\n' || *begin == '\n')
-      {
-      break;
-      }
-    }
-  auto end = marker.base();
-  for (; end != buffer.end(); ++end)
-    {
-    if (*end == '\n' || *end == '\n')
-      {
-      break;
-      }
-    }
-  std::stringstream error;
-  error
-    << "XML parse error"
-    << " in line " << marker.position() << ".\n"
-    << message << '\n'
-    << std::string(begin, end) << '\n'
-    << std::string(marker.base() - begin, ' ') << "^\n"
-    ;
-  throw std::runtime_error(error.str());
+  throw std::runtime_error(message);
   }
 
 /******************************************************************************/
 
 //#include "xml_re2c.h"
 
-reader::reader(std::string const& filename) :
-    self(new implementation(filename))
+reader::reader(char const* begin, char const* end) :
+    self(new implementation(begin, end))
   {
   }
 
@@ -215,8 +177,8 @@ std::string reader::namespace_uri() const
   }
 
 std::string reader::attribute(
-    const std::string& namespace_uri,
-    const std::string& name) const
+    const std::string& name,
+    const std::string& namespace_uri) const
   {
   if (auto attr = optional_attribute(name, namespace_uri))
     {
@@ -298,8 +260,8 @@ std::string reader::read_content()
     self->is_empty_element = false;
     return std::string();
     }
-  implementation::Iterator begin = self->cursor;
-  implementation::Iterator end;
+  char const* begin = self->cursor;
+  char const* end;
   std::size_t depth = 0;
   do
     {
